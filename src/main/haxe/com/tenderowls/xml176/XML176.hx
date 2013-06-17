@@ -40,6 +40,8 @@ enum Token {
     Colon(position:Position);
     Dot(position:Position);
     Comma(position:Position);
+    DoubleQuote(position:Position);
+    SingleQuote(position:Position);
 }
 
 
@@ -50,17 +52,23 @@ class Tokenizer {
 
     inline static var cExclamationMark = 0x21;
     inline static var cQuestionMark = 0x3F;
+
     inline static var cOpenTag = 0x3C;
     inline static var cCloseTag = 0x3E;
+    inline static var cSlash = 0x2F;
+    inline static var cColon = 0x3A;
+
     inline static var cSquareBracketLeft = 0x5B;
     inline static var cSquareBracketRight = 0x5D;
-    inline static var cMinus = 0x2D;
-    inline static var cSlash = 0x2F;
+
     inline static var cDot = 0x2E;
+    inline static var cMinus = 0x2D;
     inline static var cComma = 0x2C;
-    inline static var cColon = 0x3A;
     inline static var cSpace = 0x20;
     inline static var cTab = 0x09;
+
+    inline static var cDoubleQuote = 0x22;
+    inline static var cSingleQuote = 0x27;
 
     var lastChr:Int;
     var lastCharPos:Int;
@@ -109,6 +117,8 @@ class Tokenizer {
                 case cSlash: Slash(nonLiteralPos());
                 case cComma: Comma(nonLiteralPos());
                 case cDot: Dot(nonLiteralPos());
+                case cDoubleQuote: Token.DoubleQuote(nonLiteralPos());
+                case cSingleQuote: Token.SingleQuote(nonLiteralPos());
                 default: null;
             }
         }
