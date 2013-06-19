@@ -6,7 +6,7 @@ import haxe.macro.Expr.Position;
 
 using Tokenizer.Tokens;
 
-private class Parser {
+class Parser {
 
     var t:Token;
     var tokens:Iterable<Token>;
@@ -34,9 +34,12 @@ private class Parser {
 
     function parseNode(iter:Iterator<Token>, isRootNode:Bool):XML176Document {
 
+        if (!iter.hasNext())
+            return null;
+
         var namespace:Namespace = null;
         var tagName:String = null;
-        var children = new List<XML176Document>();
+        var children = new Array<XML176Document>();
 
         t = iter.next();
         var firstToken = t;
@@ -45,57 +48,23 @@ private class Parser {
             case Token.OpenTag(p):
                 t = iter.next();
                 switch (t) {
-                    case Token.Literal(nameOrNameSpace, _):
+                    case Token.Literal(tagNameOrNamespace, _):
                         t = iter.next();
                         switch (t) {
                             case Token.Colon(p):
-                                namespace = resolveNamespace(nameOrNameSpace);
+                                namespace = resolveNamespace(tagNameOrNamespace);
                                 t = iter.next();
                                 switch (t) {
                                     case Token.Literal(value, _):
                                         tagName = value;
-                                        var attrStream = new List<Token>();
-                                        // Fill attribute tokens list
-                                        while (!(t = iter.next()).isCloseTag()) {
-                                            attrStream.add(t);
-                                        }
-                                        // Parse attr tokens
-                                        var attr:XML176Document, attrStreamIter = attrStream.iterator();
-                                        while ((attr = parseAttr(attrStreamIter)) != null) {
-                                            children.add(attr);
-                                        }
-                                        // Parse children
-                                        try {
-                                            while (true) {
-                                                children.add(parseNode(iter, false));
-                                            }
-                                        }
-                                        catch (e:UnexpectedTagFinalizer) {
-                                            t = iter.next();
-                                            switch (t) {
-                                                case Literal(value, p):
-                                                default: throw new UnexpectedError("name", t.tokenToName(), t.tokenPosition());
-                                            }
-                                        }
+                                        parseNodeChildren(children, iter);
+                                        parseNodeFinalizer(namespace, tagName, iter);
                                     default: throw new UnexpectedError("name", t.tokenToName(), t.tokenPosition());
                                 }
-                            case Token.CloseTag(_):
-                                tagName = nameOrNameSpace;
-                                // Parse children
-                                try {
-                                    while (true) {
-                                        children.add(parseNode(iter, false));
-                                    }
-                                }
-                                catch (e:UnexpectedTagFinalizer) {
-                                    t = iter.next();
-                                    switch (t) {
-                                        case Literal(value, p):
-                                        default: throw new UnexpectedError("name", t.tokenToName(), t.tokenPosition());
-                                    }
-                                }
                             default:
-                            // TODO error
+                                tagName = tagNameOrNamespace;
+                                parseNodeChildren(children, iter);
+                                parseNodeFinalizer(namespace, tagName, iter);
                         }
                     case Token.Slash(p):
                         throw new UnexpectedTagFinalizer(t.tokenPosition());
@@ -104,6 +73,8 @@ private class Parser {
                     // TODO parseCDATA
                     default: throw new UnexpectedError("name", t.tokenToName(), t.tokenPosition());
                 }
+            case Token.Whitespace(_,_):
+                return parseNode(iter, isRootNode);
             default: throw new UnexpectedError("<", t.tokenToName(), t.tokenPosition());
         }
 
@@ -117,8 +88,98 @@ private class Parser {
         );
     }
 
+    function parseNodeChildren(children:Array<XML176Document>, iter:Iterator<Token>) {
+        var attrStream = new List<Token>();
+        // Fill attribute tokens list
+        if (!t.isCloseTag()) {
+            while (!(t = iter.next()).isCloseTag()) {
+                attrStream.add(t);
+            }
+            // Parse attr tokens
+            var attr:XML176Document, attrStreamIter = attrStream.iterator();
+            while ((attr = parseAttr(attrStreamIter)) != null) {
+                children.push(attr);
+            }
+        }
+        // Parse children
+        try {
+            var childNode;
+            while ((childNode = parseNode(iter, false)) != null) {
+                children.push(childNode);
+            }
+        }
+        catch (e:UnexpectedTagFinalizer) {
+            t = iter.next();
+            switch (t) {
+                case Literal(value, p):
+                default: throw new UnexpectedError("name", t.tokenToName(), t.tokenPosition());
+            }
+        }
+    }
+
     function parseAttr(iter:Iterator<Token>):XML176Document {
-        return null;
+
+        if (!iter.hasNext())
+            return null;
+
+        var attrName:String = null;
+        var ns:Namespace = null;
+        var value:String = null;
+
+        t = iter.next();
+        var firstToken = t;
+
+        switch (t) {
+            case Token.Whitespace(_,_): return parseAttr(iter);
+            case Token.Literal(attrNameOrNamespace, _):
+                t = iter.next();
+                switch (t) {
+                    case Token.Colon(_):
+                        ns = resolveNamespace(attrNameOrNamespace);
+                        t = iter.next();
+                        switch (t) {
+                            case Token.Literal(v,_):
+                                attrName = v;
+                                value = parseAttrValue(iter);
+                            default: throw new UnexpectedError("name", t.tokenToName(), t.tokenPosition());
+                        }
+                    default:
+                        attrName = attrNameOrNamespace;
+                        value = parseAttrValue(iter, t);
+                }
+            default: throw new UnexpectedError("name", t.tokenToName(), t.tokenPosition());
+        }
+
+        var firstTokenPos = firstToken.tokenPosition();
+        var tPos = t.tokenPosition();
+
+        return XML176Document.Attr(
+            new QName(ns, attrName),
+            value,
+            { file: firstTokenPos.file, min: firstTokenPos.min, max: tPos.max }
+        );
+    }
+
+    function parseAttrValue(iter:Iterator<Token>, ?startWith:Token):String {
+        t = startWith != null ? startWith : iter.next();
+        switch (t) {
+            case Token.Equals(_):
+                t = iter.next();
+                switch (t) {
+                    case Token.DoubleQuote(_):
+                        var valueTokens = new List<Token>();
+                        while (!(t = iter.next()).isDoubleQuote()) {
+                            valueTokens.add(t);
+                        }
+                        return valueTokens.tokensToString();
+                    default: throw new UnexpectedError("\" or '", t.tokenToName(), t.tokenPosition());
+                }
+            default: throw new UnexpectedError("=", t.tokenToName(), t.tokenPosition());
+        }
+    }
+
+    function parseNodeFinalizer(ns:Namespace, name:String, iter:Iterator<Token>) {
+
     }
 }
 
@@ -132,7 +193,7 @@ private class UnexpectedTagFinalizer extends ParserError {
 class UnexpectedError extends ParserError {
 
     public function new(expected:String, given:String, p:Position) {
-        super(expected + " expected, but " + given + " given", p);
+        super("`" + expected + "` expected, but `" + given + "` given", p);
     }
 }
 

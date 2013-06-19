@@ -5,7 +5,7 @@ import haxe.io.Input;
 
 enum XML176Document {
 
-    Node(name:QName, children:List<XML176Document>, pos:Position);
+    Node(name:QName, children:Iterable<XML176Document>, pos:Position);
     Attr(name:QName, value:String, pos:Position);
     Comment(value:Input, pos:Position);
     CDATA(value:Input, pos:Position);
@@ -19,6 +19,10 @@ class QName {
     public function new(namespace:Namespace, name:String) {
         this.namespace = namespace;
         this.name = name;
+    }
+
+    public function toString():String {
+        return namespace != null ? (namespace.prefix + ":" + name) : name;
     }
 }
 

@@ -15,13 +15,15 @@ enum Token {
     CloseTag(position:Position);
     SquareBracketLeft(position:Position);
     SquareBracketRight(position:Position);
-    Minus(position:Position);
+    //Minus(position:Position);
     Slash(position:Position);
     Colon(position:Position);
     Dot(position:Position);
     Comma(position:Position);
+    Equals(position:Position);
     DoubleQuote(position:Position);
     SingleQuote(position:Position);
+
 }
 
 class Tokens {
@@ -33,12 +35,13 @@ class Tokens {
     inline static public var cCloseTag = 0x3E;
     inline static public var cSlash = 0x2F;
     inline static public var cColon = 0x3A;
+    inline static public var cEquals = 0x3D;
 
     inline static public var cSquareBracketLeft = 0x5B;
     inline static public var cSquareBracketRight = 0x5D;
 
     inline static public var cDot = 0x2E;
-    inline static public var cMinus = 0x2D;
+    //inline static public var cMinus = 0x2D;
     inline static public var cComma = 0x2C;
 
     inline static public var cDoubleQuote = 0x22;
@@ -46,7 +49,14 @@ class Tokens {
 
     public inline static function isCloseTag(t:Token):Bool {
         return switch (t) {
-            case Token.CloseTag: true;
+            case Token.CloseTag(_): true;
+            default: false;
+        }
+    }
+
+    public inline static function isDoubleQuote(t:Token):Bool {
+        return switch (t) {
+            case Token.DoubleQuote: true;
             default: false;
         }
     }
@@ -60,7 +70,7 @@ class Tokens {
             case CloseTag(p): p;
             case SquareBracketLeft(p): p;
             case SquareBracketRight(p): p;
-            case Minus(p): p;
+            //case Minus(p): p;
             case Slash(p): p;
             case Colon(p): p;
             case Dot(p): p;
@@ -68,27 +78,34 @@ class Tokens {
             case DoubleQuote(p): p;
             case SingleQuote(p): p;
             case Whitespace(_, p): p;
+            case Equals(p): p;
         }
+    }
+
+    public static function tokensToString(ts:Iterable<Token>):String {
+        return Lambda.map(ts, tokenToName).join("");
     }
 
     public static function tokenToName(t:Token):String {
 
         return switch(t) {
-            case Literal(_, _): "literal";
+            case Literal(v, _): v;
             case ExclamationMark(_): "!";
             case QuestionMark(_): "?";
             case OpenTag(_): "<";
             case CloseTag(_): ">";
             case SquareBracketLeft(_): "[";
             case SquareBracketRight(_): "]";
-            case Minus(_): "-";
+            //case Minus(_): "-";
             case Slash(_): "/";
             case Colon(_): ":";
             case Dot(_): ".";
             case Comma(_): ",";
             case DoubleQuote(_): "\"";
             case SingleQuote(_): "\'";
-            case Whitespace(_): "whitespace";
+            case Equals(_): "-";
+            // TODO optimize
+            case Whitespace(l, _): [ for (i in 0...l) " " ].join("");
         }
     }
 }
@@ -148,7 +165,7 @@ class Tokenizer {
                 case Tokens.cQuestionMark: QuestionMark(nonLiteralPos());
                 case Tokens.cSquareBracketLeft: SquareBracketLeft(nonLiteralPos());
                 case Tokens.cSquareBracketRight: SquareBracketRight(nonLiteralPos());
-                case Tokens.cMinus: Minus(nonLiteralPos());
+                //case Tokens.cMinus: Minus(nonLiteralPos());
                 case Tokens.cSlash: Slash(nonLiteralPos());
                 case Tokens.cComma: Comma(nonLiteralPos());
                 case Tokens.cDot: Dot(nonLiteralPos());
