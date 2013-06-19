@@ -1,6 +1,6 @@
 package com.tenderowls.xml176;
 
-import com.tenderowls.xml176.XML176;
+import com.tenderowls.xml176.Tokenizer;
 import haxe.io.StringInput;
 import haxe.unit.TestCase;
 

@@ -24,10 +24,10 @@ class QName {
 
 class Namespace {
 
-    public var prefix(default, null):Null<String>;
-    public var uri(default, null):Null<String>;
+    public var prefix:Null<String>;
+    public var uri:Null<String>;
 
-    function new(?prefix:String, ?uri:String) {
+    public function new(?prefix:String, ?uri:String) {
         this.prefix = prefix;
         this.uri = uri;
     }
