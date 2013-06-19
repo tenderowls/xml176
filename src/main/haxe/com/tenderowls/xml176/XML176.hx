@@ -28,6 +28,7 @@ class XML176 {
 enum Token {
 
     Literal(value:String, position:Position);
+    Whitespace(size:Int, position:Position);
 
     ExclamationMark(position:Position);
     QuestionMark(position:Position);
@@ -44,31 +45,55 @@ enum Token {
     SingleQuote(position:Position);
 }
 
+class Tokens {
+
+    inline static public var cExclamationMark = 0x21;
+    inline static public var cQuestionMark = 0x3F;
+
+    inline static public var cOpenTag = 0x3C;
+    inline static public var cCloseTag = 0x3E;
+    inline static public var cSlash = 0x2F;
+    inline static public var cColon = 0x3A;
+
+    inline static public var cSquareBracketLeft = 0x5B;
+    inline static public var cSquareBracketRight = 0x5D;
+
+    inline static public var cDot = 0x2E;
+    inline static public var cMinus = 0x2D;
+    inline static public var cComma = 0x2C;
+
+    inline static public var cDoubleQuote = 0x22;
+    inline static public var cSingleQuote = 0x27;
+
+    public static function tokenToName(t:Token):String {
+    
+        return switch(t) {
+            case Literal(_, _): "literal";
+            case ExclamationMark(_): "!";
+            case QuestionMark(_): "?";
+            case OpenTag(_): "<";
+            case CloseTag(_): ">";
+            case SquareBracketLeft(_): "[";
+            case SquareBracketRight(_): "]";
+            case Minus(_): "-";
+            case Slash(_): "/";
+            case Colon(_): ":";
+            case Dot(_): ".";
+            case Comma(_): ",";
+            case DoubleQuote(_): "\"";
+            case SingleQuote(_): "\'";
+            case Whitespace(_): "whitespace";
+        }
+    }
+}
 
 /**
  *  Tokens iterator.
  */
 class Tokenizer {
 
-    inline static var cExclamationMark = 0x21;
-    inline static var cQuestionMark = 0x3F;
-
-    inline static var cOpenTag = 0x3C;
-    inline static var cCloseTag = 0x3E;
-    inline static var cSlash = 0x2F;
-    inline static var cColon = 0x3A;
-
-    inline static var cSquareBracketLeft = 0x5B;
-    inline static var cSquareBracketRight = 0x5D;
-
-    inline static var cDot = 0x2E;
-    inline static var cMinus = 0x2D;
-    inline static var cComma = 0x2C;
     inline static var cSpace = 0x20;
     inline static var cTab = 0x09;
-
-    inline static var cDoubleQuote = 0x22;
-    inline static var cSingleQuote = 0x27;
 
     var lastChr:Int;
     var lastCharPos:Int;
@@ -100,6 +125,10 @@ class Tokenizer {
         }
     }
 
+    inline function getLastCharIsWhiteSpace():Bool {
+        return lastChr == cTab || lastChr == cSpace;
+    }
+
     function getLastCharIsNotLiteral():Token {
 
         if (lastNonLiteral != null) {
@@ -107,18 +136,18 @@ class Tokenizer {
         }
         else {
             return lastNonLiteral = switch(lastChr) {
-                case cOpenTag: OpenTag(nonLiteralPos());
-                case cCloseTag: CloseTag(nonLiteralPos());
-                case cExclamationMark: ExclamationMark(nonLiteralPos());
-                case cQuestionMark: QuestionMark(nonLiteralPos());
-                case cSquareBracketLeft: SquareBracketLeft(nonLiteralPos());
-                case cSquareBracketRight: SquareBracketRight(nonLiteralPos());
-                case cMinus: Minus(nonLiteralPos());
-                case cSlash: Slash(nonLiteralPos());
-                case cComma: Comma(nonLiteralPos());
-                case cDot: Dot(nonLiteralPos());
-                case cDoubleQuote: Token.DoubleQuote(nonLiteralPos());
-                case cSingleQuote: Token.SingleQuote(nonLiteralPos());
+                case Tokens.cOpenTag: OpenTag(nonLiteralPos());
+                case Tokens.cCloseTag: CloseTag(nonLiteralPos());
+                case Tokens.cExclamationMark: ExclamationMark(nonLiteralPos());
+                case Tokens.cQuestionMark: QuestionMark(nonLiteralPos());
+                case Tokens.cSquareBracketLeft: SquareBracketLeft(nonLiteralPos());
+                case Tokens.cSquareBracketRight: SquareBracketRight(nonLiteralPos());
+                case Tokens.cMinus: Minus(nonLiteralPos());
+                case Tokens.cSlash: Slash(nonLiteralPos());
+                case Tokens.cComma: Comma(nonLiteralPos());
+                case Tokens.cDot: Dot(nonLiteralPos());
+                case Tokens.cDoubleQuote: Token.DoubleQuote(nonLiteralPos());
+                case Tokens.cSingleQuote: Token.SingleQuote(nonLiteralPos());
                 default: null;
             }
         }
@@ -138,25 +167,31 @@ class Tokenizer {
         }
         else {
 
-            var buf:BytesOutput = new BytesOutput();
             var startPos = lastCharPos;
-            var whitespace:Bool = true;
 
-            do {
-                if (lastChr != cTab && lastChr != cSpace) {
-                    whitespace = false;
-                }
-                buf.writeInt8(lastChr);
-                updateLastChar();
-                nonLiteral = getLastCharIsNotLiteral();
-            }
-            while (!eofReached && nonLiteral == null);
-
-            if (!whitespace || eofReached) {
-                return Literal(buf.getBytes().toString(), { file:fileName, min:startPos, max: lastCharPos });
+            if (getLastCharIsWhiteSpace()) {
+                // Read whitespaces
+                var whitespace:Int = 0;
+                do {
+                    whitespace++;
+                    updateLastChar();
+                } while (getLastCharIsWhiteSpace());
+                return Token.Whitespace(
+                    whitespace,
+                    { file:fileName, min:startPos, max: lastCharPos }
+                );
             }
             else {
-                return next();
+                var buf:BytesOutput = new BytesOutput();
+                do {
+                    buf.writeInt8(lastChr);
+                    updateLastChar();
+                }
+                while (!eofReached && getLastCharIsNotLiteral() == null && !getLastCharIsWhiteSpace());
+                return Token.Literal(
+                    buf.getBytes().toString(),
+                    { file:fileName, min:startPos, max: lastCharPos }
+                );
             }
         }
     }
@@ -179,10 +214,58 @@ private class Parser {
     }
 
     public function parse():XML176Document {
+
         for (t in tokens) {
 
         }
 
         return null;
+    }
+
+/*
+    function parseTag(iter:Iterator<Token>):XML176Document {
+        var t = iter.next();
+        switch (t) {
+            case Token.OpenTag(p):
+                var t = iter.next();
+                switch (t) {
+                    case Literal(v, _):
+                        var tagNameBuilt:Bool = false;
+                        var t = iter.next();
+                        switch (t) {
+                            case Token.Colon(colonPos):
+                                assertTagNameBuild(tagNameBuilt, colonPos);
+
+                            case Token.CloseTag(_):
+                            case Token.Literal(v2, _):
+                        }
+                    default: throw new UnexpectedError("name", Tokens.tokenToName(t), p);
+                }
+            ;
+            default: throw new UnexpectedError("<", Tokens.tokenToName(t), p);
+        }
+    }
+*/
+}
+
+class UnexpectedError extends ParserError {
+
+    public function new(expected:String, given:String, p:Position) {
+        super(expected + " expected, but " + given + " given", p);
+    }
+}
+
+class ParserError {
+
+    public var message:String;
+    public var position:Position;
+
+    public function new(message:String, position:Position) {
+        this.message = message;
+        this.position = position;
+    }
+
+    public function toString() {
+        return message + " at " + position;
     }
 }

@@ -33,6 +33,7 @@ class TokenizerTest extends TestCase {
             Token.OpenTag({ file: u, min:0, max:1 }),
             Token.Literal("name", { file: u, min:1, max:5 }),
             Token.CloseTag({ file: u, min:5, max:6 }),
+            Token.Whitespace(2, { file: u, min:6, max:8 }),
             Token.OpenTag({ file: u, min:8, max:9 }),
             Token.Slash({ file: u, min:9, max:10 }),
             Token.Literal("name", { file: u, min:10, max:14 }),
@@ -42,6 +43,24 @@ class TokenizerTest extends TestCase {
         var actual:Array<Token> = new Array<Token>();
 
         for (t in new Tokenizer(new StringInput("<name>  </name>"), u)) {
+            actual.push(t);
+        }
+
+        assertEquals(expected.toString(), actual.toString());
+    }
+
+    public function testLiteralWithWhiteSpace() {
+
+        var expected:Array<Token> = [
+            Token.Literal("Hello", { file: u, min:0, max:5 }),
+            Token.Whitespace(1, { file: u, min:5, max:6 }),
+            Token.Literal("world", { file: u, min:6, max:11 }),
+            Token.ExclamationMark({ file: u, min:11, max:12 })
+        ];
+
+        var actual:Array<Token> = new Array<Token>();
+
+        for (t in new Tokenizer(new StringInput("Hello world!"), u)) {
             actual.push(t);
         }
 
