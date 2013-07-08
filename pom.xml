@@ -16,7 +16,7 @@
             <plugin>
                 <groupId>com.tenderowls.opensource</groupId>
                 <artifactId>haxemojos-maven-plugin</artifactId>
-                <version>1.0.0-RC1</version>
+                <version>1.0.0-SNAPSHOT</version>
                 <extensions>true</extensions>
                 <configuration>
                     <targets>
@@ -41,7 +41,18 @@
         </plugins>
     </build>
 
+    <repositories>
+        <repository>
+            <id>haxemojos-public-repository</id>
+            <url>http://repo.haxemojos.org/content/groups/public</url>
+        </repository>
+    </repositories>
+
     <pluginRepositories>
+        <pluginRepository>
+            <id>oss</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </pluginRepository>
         <pluginRepository>
             <id>haxemojos-public-repository</id>
             <url>http://repo.haxemojos.org/content/groups/public</url>
@@ -50,8 +61,13 @@
 
     <distributionManagement>
         <repository>
+            <id>haxemojos-nexus-releases</id>
+            <url>http://repo.haxemojos.org/content/repositories/releases</url>
+        </repository>
+        <snapshotRepository>
             <id>haxemojos-nexus-snapshots</id>
             <url>http://repo.haxemojos.org/content/repositories/snapshots</url>
-        </repository>
+        </snapshotRepository>
     </distributionManagement>
+
 </project>
