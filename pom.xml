@@ -41,10 +41,21 @@
         </plugins>
     </build>
 
+    <repositories>
+        <repository>
+            <id>haxemojos-repository</id>
+            <url>http://repo.haxemojos.org/content/groups/public/</url>
+        </repository>
+    </repositories>
+
     <pluginRepositories>
         <pluginRepository>
-            <id>haxemojos-public-repository</id>
-            <url>http://repo.haxemojos.org/content/groups/public</url>
+            <id>haxemojos-repository</id>
+            <url>http://repo.haxemojos.org/content/groups/public/</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>oss</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
         </pluginRepository>
     </pluginRepositories>
 
