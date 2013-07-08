@@ -48,4 +48,10 @@
         </pluginRepository>
     </pluginRepositories>
 
+    <distributionManagement>
+        <repository>
+            <id>haxemojos-nexus-snapshots</id>
+            <url>http://repo.haxemojos.org/content/repositories/snapshots</url>
+        </repository>
+    </distributionManagement>
 </project>

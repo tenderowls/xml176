@@ -15,8 +15,8 @@ class Xml176ParserTest extends haxe.unit.TestCase {
     public function testAttr() {
         var doc:Xml176Document = Xml176Parser.parse("<Node attr=\"value\"></Node>");
         assertEquals(
-            Std.string(doc.getAttrPosition(doc.document.firstChild(), "attr")), "dsdsad"
-            //Std.string({from:7, to:11})
+            Std.string(doc.getAttrPosition(doc.document.firstChild(), "attr")),
+            Std.string({from:7, to:11})
         );
     }
 }
